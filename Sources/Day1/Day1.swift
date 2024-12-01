@@ -26,6 +26,10 @@ struct Day1: DayCommand {
         printTitle("Part 1", level: .title1)
         let totalDistance = part1(left: lists.left, right: lists.right)
         print("Total distance between lists:", totalDistance, terminator: "\n\n")
+        
+        printTitle("Part 2", level: .title1)
+        let similarityScore = part2(left: lists.left, right: lists.right)
+        print("Similarity score:", similarityScore)
     }
     
     private func lists(from lines: [String]) -> (left: [Int], right: [Int]) {
@@ -58,8 +62,13 @@ struct Day1: DayCommand {
         })
     }
     
-    func part2(inputs: [String]) -> Int {
-        // TODO
-        0
+    func part2(left: [Int], right: [Int]) -> Int {
+        let countsByNumberInRightList = right.reduce(into: [:]) { counts, number in
+            counts[number, default: 0] += 1
+        }
+        
+        return left.reduce(into: 0, { result, number in
+            result += number * countsByNumberInRightList[number, default: 0]
+        })
     }
 }
