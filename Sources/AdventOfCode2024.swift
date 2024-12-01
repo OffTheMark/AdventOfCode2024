@@ -15,6 +15,7 @@ struct AdventOfCode2024: ParsableCommand {
             version: "0.0.1",
             subcommands: [
                 Day1.self,
+                Day2.self,
             ]
         )
     }
