@@ -34,50 +34,22 @@ struct Day2: DayCommand {
     }
     
     private func part1(reports: [Report]) -> Int {
-        reports.count(where: { report in
-            let deltas = report.deltas()
-            return deltas.isSafe
-        })
+        reports.count(where: \.isSafe)
     }
     
     private func part2(reports: [Report]) -> Int {
-        reports.count(where: { report in
-            let deltas = report.deltas()
-            if deltas.isSafe {
-                return true
-            }
-            
-            return report.readings.indices.contains(where: { index in
-                var newReadings = report.readings
-                newReadings.remove(at: index)
-                
-                let report = Report(readings: newReadings)
-                let deltas = report.deltas()
-                return deltas.isSafe
-            })
-        })
+        reports.count(where: \.isSafeWithDamping)
     }
 }
 
 private struct Report: Equatable {
     let readings: [Int]
     
-    func deltas() -> Deltas {
-        Deltas(
-            values: readings.windows(ofCount: 2).map({ window in
-                window.last! - window.first!
-            })
-        )
-    }
-}
-
-private struct Deltas {
-    let values: [Int]
-    
     var isSafe: Bool {
         var signums = Set<Int>()
         
-        return values.allSatisfy({ value in
+        let deltas = deltas()
+        return deltas.allSatisfy({ value in
             if !(1 ... 3).contains(abs(value)) {
                 return false
             }
@@ -93,21 +65,23 @@ private struct Deltas {
         })
     }
     
-    func isSafeWithDamping() -> Bool {
+    var isSafeWithDamping: Bool {
         if isSafe {
             return true
         }
         
-        return values.indexed().contains(where: { (index, delta) in
-            var newValues = values
-            newValues.remove(at: index)
+        return readings.indices.contains(where: { index in
+            var newReadings = readings
+            newReadings.remove(at: index)
             
-            if index > values.startIndex, index != values.indices.last {
-                newValues[index - 1] += delta
-            }
-            
-            let newDeltas = Deltas(values: newValues)
-            return newDeltas.isSafe
+            let report = Report(readings: newReadings)
+            return report.isSafe
+        })
+    }
+    
+    func deltas() -> [Int] {
+        readings.windows(ofCount: 2).map({ window in
+            window.last! - window.first!
         })
     }
 }
