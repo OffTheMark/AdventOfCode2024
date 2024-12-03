@@ -16,6 +16,7 @@ struct AdventOfCode2024: ParsableCommand {
             subcommands: [
                 Day1.self,
                 Day2.self,
+                Day3.self,
             ]
         )
     }
