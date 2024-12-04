@@ -124,6 +124,10 @@ struct Translation2D: Hashable {
     static func * (lhs: Int, rhs: Self) -> Self {
         Self(deltaX: rhs.deltaX * lhs, deltaY: rhs.deltaY * lhs)
     }
+    
+    static prefix func - (translation: Self) -> Self {
+        Self(deltaX: -translation.deltaX, deltaY: -translation.deltaY)
+    }
 }
 
 // MARK: - Size2D
