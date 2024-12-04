@@ -40,30 +40,34 @@ struct Day4: DayCommand {
     }
     
     func part1(_ grid: Grid2D<Character>) -> Int {
-        let targetWord = "XMAS"
-        let lettersOfTargetByOffset: [Int: Character] = targetWord.indexed().reduce(into: [:]) { result, pair in
-            let (index, character) = pair
-            let offset = targetWord.distance(from: targetWord.startIndex, to: index)
-            result[offset] = character
-        }
-        let directions: [Translation2D] = [.up, .upRight, .right, .downRight, .down, .downLeft, .left, .upLeft]
         let pointsOfLetterX: Set<Point2D> = grid.reduce(into: []) { result, pair in
             let (point, letter) = pair
             if letter == "X" {
                 result.insert(point)
             }
         }
+        let restOfXMAS = "MAS"
+        let remainingLettersByOffset: [Int: Character] = restOfXMAS.indexed().reduce(into: [:]) { result, pair in
+            let (index, character) = pair
+            let offset = restOfXMAS.distance(from: restOfXMAS.startIndex, to: index) + 1
+            result[offset] = character
+        }
+        let allowedDirections: [Translation2D] = [.up, .upRight, .right, .downRight, .down, .downLeft, .left, .upLeft]
         
-        let count = pointsOfLetterX.reduce(into: 0) { result, point in
-            let countForPoint = directions.count(where: { translation in
-                lettersOfTargetByOffset.allSatisfy { offset, letter in
-                    let pointOfLetter = point.applying(translation * offset)
-                    return grid[pointOfLetter] == letter
-                }
+        func hasXMASStarting(at point: Point2D, in direction: Translation2D) -> Bool {
+            remainingLettersByOffset.allSatisfy { offset, letter in
+                let pointOfLetter = point.applying(direction * offset)
+                return grid[pointOfLetter] == letter
+            }
+        }
+        
+        let xmasCount = pointsOfLetterX.reduce(into: 0) { result, point in
+            let countForPoint = allowedDirections.count(where: { direction in
+                hasXMASStarting(at: point, in: direction)
             })
             result += countForPoint
         }
-        return count
+        return xmasCount
     }
     
     func part2(_ grid: Grid2D<Character>) -> Int {
