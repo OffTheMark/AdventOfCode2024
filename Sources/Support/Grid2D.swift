@@ -25,6 +25,22 @@ struct Grid2D<Value> {
     func contains(_ position: Point2D) -> Bool {
         valuesByPosition.keys.contains(position)
     }
+    
+    subscript(point: Point2D) -> Value? {
+        valuesByPosition[point]
+    }
+    
+    subscript(point: Point2D, default defaultValue: @autoclosure () -> Value) -> Value {
+        valuesByPosition[point, default: defaultValue()]
+    }
+}
+
+extension Grid2D: Sequence {
+    typealias Iterator = Dictionary<Point2D, Value>.Iterator
+    
+    func makeIterator() -> Iterator {
+        valuesByPosition.makeIterator()
+    }
 }
 
 extension Grid2D {
@@ -35,7 +51,7 @@ extension Grid2D {
         let valuesByPosition: [Point2D: Value] = lines.enumerated().reduce(into: [:], { result, element in
             let (y, line) = element
             
-            size.width = max(size.width, line.count)
+            size.width = Swift.max(size.width, line.count)
             
             for (x, character) in line.enumerated() {
                 guard let value = valueForCharacter(character) else {

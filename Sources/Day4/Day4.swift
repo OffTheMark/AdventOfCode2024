@@ -47,7 +47,7 @@ struct Day4: DayCommand {
             result[offset] = character
         }
         let directions: [Translation2D] = [.up, .upRight, .right, .downRight, .down, .downLeft, .left, .upLeft]
-        let pointsOfLetterX: Set<Point2D> = grid.valuesByPosition.reduce(into: []) { result, pair in
+        let pointsOfLetterX: Set<Point2D> = grid.reduce(into: []) { result, pair in
             let (point, letter) = pair
             if letter == "X" {
                 result.insert(point)
@@ -58,7 +58,7 @@ struct Day4: DayCommand {
             let countForPoint = directions.count(where: { translation in
                 lettersOfTargetByOffset.allSatisfy { offset, letter in
                     let pointOfLetter = point.applying(translation * offset)
-                    return grid.valuesByPosition[pointOfLetter] == letter
+                    return grid[pointOfLetter] == letter
                 }
             })
             result += countForPoint
@@ -67,7 +67,7 @@ struct Day4: DayCommand {
     }
     
     func part2(_ grid: Grid2D<Character>) -> Int {
-        let pointsOfLetterA: Set<Point2D> = grid.valuesByPosition.reduce(into: []) { result, pair in
+        let pointsOfLetterA: Set<Point2D> = grid.reduce(into: []) { result, pair in
             let (point, letter) = pair
             if letter == "A" {
                 result.insert(point)
@@ -80,8 +80,7 @@ struct Day4: DayCommand {
                 let bottom = point.applying(-translation)
                 var remainingLetters = Set("MS")
                 
-                guard let topLetter = grid.valuesByPosition[top],
-                      let bottomLetter = grid.valuesByPosition[bottom] else {
+                guard let topLetter = grid[top], let bottomLetter = grid[bottom] else {
                     return false
                 }
                 
