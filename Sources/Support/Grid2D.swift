@@ -10,7 +10,7 @@ import Foundation
 // MARK: Grid2D
 
 struct Grid2D<Value> {
-    let valuesByPosition: [Point2D: Value]
+    private(set) var valuesByPosition: [Point2D: Value]
     let origin: Point2D
     let size: Size2D
     
@@ -26,8 +26,17 @@ struct Grid2D<Value> {
         valuesByPosition.keys.contains(position)
     }
     
+    func isPointInside(_ point: Point2D) -> Bool {
+        rows.contains(point.y) && columns.contains(point.x)
+    }
+    
     subscript(point: Point2D) -> Value? {
-        valuesByPosition[point]
+        get {
+            valuesByPosition[point]
+        }
+        set {
+            valuesByPosition[point] = newValue
+        }
     }
     
     subscript(point: Point2D, default defaultValue: @autoclosure () -> Value) -> Value {
