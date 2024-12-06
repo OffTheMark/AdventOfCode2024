@@ -40,7 +40,12 @@ struct Grid2D<Value> {
     }
     
     subscript(point: Point2D, default defaultValue: @autoclosure () -> Value) -> Value {
-        valuesByPosition[point, default: defaultValue()]
+        get {
+            valuesByPosition[point, default: defaultValue()]
+        }
+        set {
+            valuesByPosition[point, default: defaultValue()] = newValue
+        }
     }
 }
 
