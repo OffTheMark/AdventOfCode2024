@@ -38,6 +38,13 @@ struct Day5: DayCommand {
             sumOfMiddlePageNumbersOfCorrectUpdates,
             terminator: "\n\n"
         )
+        
+        printTitle("Part 2", level: .title1)
+        let sumOfMiddlePageNumbersOfIncorrectUpdates = part2(rules: rules, updates: updates)
+        print(
+            "Sum of the middle page numbers of correctly-ordered updates after correctly ordering them:",
+            sumOfMiddlePageNumbersOfIncorrectUpdates
+        )
     }
     
     private func part1(rules: [Rule], updates: [Update]) -> Int {
@@ -49,6 +56,31 @@ struct Day5: DayCommand {
             }
         })
     }
+    
+    private func part2(rules: [Rule], updates: [Update]) -> Int {
+        updates.reduce(into: 0) { result, update in
+            let isCorrectlyOrdered = update.isCorrectlyOrdered(accordingTo: rules)
+            
+            if isCorrectlyOrdered {
+                return
+            }
+            
+            var previousPagesByPage: [Int: Set<Int>] = update.reduce(into: [:]) { result, page in
+                result[page] = []
+            }
+            
+            for rule in rules where rule.isApplicable(to: update) {
+                previousPagesByPage[rule.rhs, default: []].insert(rule.lhs)
+            }
+            
+            if let middlePage = previousPagesByPage.first(where: { _, previousPages in
+                previousPages.count == update.pageCount / 2
+            })?.key {
+                result += middlePage
+            }
+        }
+    }
+}
 
 private struct Update {
     let pages: [Int]
