@@ -32,7 +32,9 @@ struct Day5: DayCommand {
             })
         
         printTitle("Part 1", level: .title1)
-        let sumOfMiddlePageNumbersOfCorrectUpdates = part1(rules: rules, updates: updates)
+        let (correctUpdates, incorrectUpdates) = partition(updates, accordingTo: rules)
+        
+        let sumOfMiddlePageNumbersOfCorrectUpdates = part1(correctUpdates: correctUpdates)
         print(
             "Sum of the middle page numbers of correctly-ordered updates:",
             sumOfMiddlePageNumbersOfCorrectUpdates,
@@ -40,37 +42,45 @@ struct Day5: DayCommand {
         )
         
         printTitle("Part 2", level: .title1)
-        let sumOfMiddlePageNumbersOfIncorrectUpdates = part2(rules: rules, updates: updates)
+        let sumOfMiddlePageNumbersOfIncorrectUpdates = part2(rules: rules, incorrectUpdates: incorrectUpdates)
         print(
             "Sum of the middle page numbers of correctly-ordered updates after correctly ordering them:",
             sumOfMiddlePageNumbersOfIncorrectUpdates
         )
     }
     
-    private func part1(rules: [Rule], updates: [Update]) -> Int {
-        updates.reduce(into: 0, { result, update in
+    private func partition(_ updates: [Update], accordingTo rules: [Rule]) -> (correct: [Update], incorrect: [Update]) {
+        var correctUpdates = [Update]()
+        var incorrectUpdates = [Update]()
+        
+        for update in updates {
             let isCorrectlyOrdered = update.isCorrectlyOrdered(accordingTo: rules)
             
             if isCorrectlyOrdered {
-                result += update[update.pageCount / 2]
+                correctUpdates.append(update)
             }
+            else {
+                incorrectUpdates.append(update)
+            }
+        }
+        
+        return (correctUpdates, incorrectUpdates)
+    }
+    
+    private func part1(correctUpdates: [Update]) -> Int {
+        correctUpdates.reduce(into: 0, { result, update in
+            result += update[update.pageCount / 2]
         })
     }
     
-    private func part2(rules: [Rule], updates: [Update]) -> Int {
-        updates.reduce(into: 0) { result, update in
-            let isCorrectlyOrdered = update.isCorrectlyOrdered(accordingTo: rules)
-            
-            if isCorrectlyOrdered {
-                return
-            }
-            
-            var previousPagesByPage: [Int: Set<Int>] = update.reduce(into: [:]) { result, page in
-                result[page] = []
-            }
-            
-            for rule in rules where rule.isApplicable(to: update) {
-                previousPagesByPage[rule.rhs, default: []].insert(rule.lhs)
+    private func part2(rules: [Rule], incorrectUpdates: [Update]) -> Int {
+        incorrectUpdates.reduce(into: 0) { result, update in
+            let previousPagesByPage: [Int: Set<Int>] = rules.reduce(into: [:]) { result, rule in
+                guard rule.isApplicable(to: update) else {
+                    return
+                }
+                
+                result[rule.rhs, default: []].insert(rule.lhs)
             }
             
             if let middlePage = previousPagesByPage.first(where: { _, previousPages in
