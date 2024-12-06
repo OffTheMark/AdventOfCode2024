@@ -22,15 +22,23 @@ struct Day6: DayCommand {
     var puzzleInputPath: String
     
     func run() throws {
-        let grid = Grid2D<Tile>(rawValue: try readFile())
+        let (grid, initialState) = try parseGrid(input: try readFile())
         
         printTitle("Part 1", level: .title1)
-        let distinctPointsVisited = part1(grid: grid)
-        print("Distinct positions visited by the guard before leaving the mapped area:", distinctPointsVisited, terminator: "\n\n")
+        let distinctPointsVisited = part1(grid: grid, initialState: initialState)
+        print(
+            "Distinct positions visited by the guard before leaving the mapped area:",
+            distinctPointsVisited.count,
+            terminator: "\n\n"
+        )
+        
+        printTitle("Part 2", level: .title1)
+        let pointsCausingLoops = part2(grid: grid, initialState: initialState, visitedPoints: distinctPointsVisited)
+        print("Different positions causing a loop:", pointsCausingLoops)
     }
     
-    private func part1(grid: Grid2D<Tile>) -> Int {
-        var grid = grid
+    private func parseGrid(input: String) throws -> (grid: Grid2D<Tile>, initialState: State) {
+        var grid = Grid2D<Tile>(rawValue: input)
         var initialDirection: Direction!
         let initialPoint: Point2D! = grid.first(where: { _, tile in
             switch tile {
@@ -44,31 +52,66 @@ struct Day6: DayCommand {
         })!.key
         grid[initialPoint] = nil
         
-        var currentDirection: Direction = initialDirection
-        var currentPoint: Point2D = initialPoint
-        
+        return (grid, State(point: initialPoint, direction: initialDirection))
+    }
+    
+    private func part1(grid: Grid2D<Tile>, initialState: State) -> Set<Point2D> {
+        var currentState: State = initialState
         var visitedPoints = Set<Point2D>()
         
         repeat {
-            visitedPoints.insert(currentPoint)
+            visitedPoints.insert(currentState.point)
             
-            let nextPoint = currentPoint.applying(currentDirection.translation)
+            let nextPoint = currentState.point.applying(currentState.direction.translation)
             
             if grid[nextPoint] == .obstacle {
-                currentDirection = currentDirection.turningRight()
+                currentState.direction = currentState.direction.turningRight()
                 continue
             }
             
-            currentPoint = nextPoint
-        } while grid.isPointInside(currentPoint)
+            currentState.point = nextPoint
+        } while grid.isPointInside(currentState.point)
         
-        return visitedPoints.count
+        return visitedPoints
+    }
+    
+    private func part2(grid: Grid2D<Tile>, initialState: State, visitedPoints: Set<Point2D>) -> Int {
+        var candidates = visitedPoints
+        candidates.remove(initialState.point)
+        
+        func causesLoop(point: Point2D) -> Bool {
+            var grid = grid
+            grid[point] = .obstacle
+            var currentState = initialState
+            var visitedStates = Set<State>()
+            
+            repeat {
+                if visitedStates.contains(currentState) {
+                    return true
+                }
+                
+                visitedStates.insert(currentState)
+                
+                let nextPoint = currentState.point.applying(currentState.direction.translation)
+                
+                if grid[nextPoint] == .obstacle {
+                    currentState.direction = currentState.direction.turningRight()
+                    continue
+                }
+                
+                currentState.point = nextPoint
+            } while grid.isPointInside(currentState.point)
+            
+            return false
+        }
+        
+        return candidates.count(where: causesLoop)
     }
 }
 
 private struct State: Hashable {
-    let point: Point2D
-    let direction: Direction
+    var point: Point2D
+    var direction: Direction
 }
 
 private enum Direction: Character {
