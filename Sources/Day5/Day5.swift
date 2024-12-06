@@ -25,10 +25,10 @@ struct Day5: DayCommand {
         let input = try readFile()
         let parts = input.components(separatedBy: "\n\n")
         let rules = parts[0].components(separatedBy: .newlines).compactMap(Rule.init)
-        let updates: [[Int]] = parts[1]
+        let updates: [Update] = parts[1]
             .components(separatedBy: .newlines)
             .map({ line in
-                line.components(separatedBy: ",").compactMap(Int.init)
+                Update(pages: line.components(separatedBy: ",").compactMap(Int.init))
             })
         
         printTitle("Part 1", level: .title1)
@@ -40,35 +40,74 @@ struct Day5: DayCommand {
         )
     }
     
-    private func part1(rules: [Rule], updates: [[Int]]) -> Int {
+    private func part1(rules: [Rule], updates: [Update]) -> Int {
         updates.reduce(into: 0, { result, update in
-            let offsetsByPageNumber = update.enumerated().reduce(into: [Int: Int](), { result, pair in
-                let (offset, pageNumber) = pair
-                result[pageNumber] = offset
-            })
-            let applicableRules = rules.filter({ rule in
-                offsetsByPageNumber.keys.contains(rule.lhs) && offsetsByPageNumber.keys.contains(rule.rhs)
-            })
-            
-            let isCorrectlyOrdered = !applicableRules.isEmpty && applicableRules.allSatisfy({ rule in
-                let lhsOffset = offsetsByPageNumber[rule.lhs]!
-                let rhsOffset = offsetsByPageNumber[rule.rhs]!
-                
-                return lhsOffset < rhsOffset
-            })
+            let isCorrectlyOrdered = update.isCorrectlyOrdered(accordingTo: rules)
             
             if isCorrectlyOrdered {
-                result += update[update.count / 2]
+                result += update[update.pageCount / 2]
             }
         })
     }
+
+private struct Update {
+    let pages: [Int]
+    
+    var pageCount: Int { pages.count }
+    
+    var distinctPages: Set<Int> { Set(pages) }
+    
+    func isCorrectlyOrdered(accordingTo rules: [Rule]) -> Bool {
+        let applicableRules = rules.filter { rule in
+            rule.isApplicable(to: self)
+        }
+        
+        if applicableRules.isEmpty {
+            return false
+        }
+        
+        let offsetsByPageNumber = enumerated()
+            .reduce(into: [Int: Int](), { result, pair in
+                let (offset, pageNumber) = pair
+                result[pageNumber] = offset
+            })
+        
+        return applicableRules.allSatisfy { rule in
+            let lhsOffset = offsetsByPageNumber[rule.lhs]!
+            let rhsOffset = offsetsByPageNumber[rule.rhs]!
+            
+            return lhsOffset < rhsOffset
+        }
+    }
+}
+
+extension Update: Sequence {
+    func makeIterator() -> IndexingIterator<[Int]> {
+        pages.makeIterator()
+    }
+}
+
+extension Update: Collection {
+    var startIndex: Int { pages.startIndex }
+    
+    var endIndex: Int { pages.endIndex }
+    
+    func index(after i: Int) -> Int {
+        pages.index(after: i)
+    }
+    
+    subscript(index: Int) -> Int { pages[index] }
 }
 
 private struct Rule {
     let lhs: Int
     let rhs: Int
     
-    var numbers: Set<Int> { [lhs, rhs] }
+    var pages: Set<Int> { [lhs, rhs] }
+    
+    func isApplicable(to update: Update) -> Bool {
+        update.distinctPages.isSuperset(of: pages)
+    }
 }
 
 extension Rule {
