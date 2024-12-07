@@ -28,11 +28,23 @@ struct Day7: DayCommand {
         printTitle("Part 1", level: .title1)
         let totalCalibrationResult = part1(equations)
         print("Total calibration result:", totalCalibrationResult, terminator: "\n\n")
+        
+        printTitle("Part 2", level: .title1)
+        let totalCalibrationResultWithConcatenation = part2(equations)
+        print("Total calibration result allowing concatenation:", totalCalibrationResultWithConcatenation)
     }
     
     private func part1(_ equations: [CalibrationEquation]) -> Int {
         equations.reduce(into: 0, { sum, equation in
-            if equation.canProduceTestValue() {
+            if equation.canProduceTestValue(allowedOperations: [.add, .multiply]) {
+                sum += equation.testValue
+            }
+        })
+    }
+    
+    private func part2(_ equations: [CalibrationEquation]) -> Int {
+        equations.reduce(into: 0, { sum, equation in
+            if equation.canProduceTestValue(allowedOperations: Operation.allCases) {
                 sum += equation.testValue
             }
         })
@@ -43,9 +55,7 @@ private struct CalibrationEquation {
     let testValue: Int
     let numbers: [Int]
     
-    func canProduceTestValue() -> Bool {
-        let operations: [Operation] = [.addition, .multiplication]
-        
+    func canProduceTestValue(allowedOperations: [Operation]) -> Bool {
         guard numbers.count >= 2 else {
             return false
         }
@@ -69,7 +79,7 @@ private struct CalibrationEquation {
                 continue
             }
             
-            for operation in operations {
+            for operation in allowedOperations {
                 let nextResult = operation.perform(current.result, numbers[nextIndex])
                 let nextNode = Node(result: nextResult, index: nextIndex)
                 
@@ -124,16 +134,19 @@ extension CalibrationEquation {
     }
 }
 
-private enum Operation: Hashable {
-    case addition
-    case multiplication
+private enum Operation: Hashable, CaseIterable {
+    case add
+    case multiply
+    case concatenate
     
     func perform(_ lhs: Int, _ rhs: Int) -> Int {
         switch self {
-        case .addition:
+        case .add:
             lhs + rhs
-        case .multiplication:
+        case .multiply:
             lhs * rhs
+        case .concatenate:
+            Int(String(lhs) + String(rhs))!
         }
     }
 }
