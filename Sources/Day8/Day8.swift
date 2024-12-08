@@ -40,6 +40,13 @@ struct Day8: DayCommand {
             uniqueAntinodeLocations.count,
             terminator: "\n\n"
         )
+        
+        printTitle("Part 2", level: .title1)
+        let uniqueAntinodeLocationsUsingUpdatedModel = part2(grid)
+        print(
+            "Unique locations within the map containing an antinode using the updated model:",
+            uniqueAntinodeLocationsUsingUpdatedModel.count
+        )
     }
     
     func part1(_ grid: Grid2D<Character>) -> Set<Point2D> {
@@ -48,9 +55,7 @@ struct Day8: DayCommand {
             result[frequency, default: []].insert(point)
         })
         
-        return pointsByFrequency.reduce(into: Set<Point2D>(), { locations, pair in
-            let (frequency, points) = pair
-            
+        return pointsByFrequency.values.reduce(into: Set<Point2D>()) { locations, points in
             let antinodesForFrequency: Set<Point2D> = points.combinations(ofCount: 2)
                 .reduce(into: []) { antinodes, combination in
                     let translation = combination[0].translation(to: combination[1])
@@ -65,12 +70,67 @@ struct Day8: DayCommand {
                     antinodes.formUnion(antinodesOfCombination)
                 }
             locations.formUnion(antinodesForFrequency)
+        }
+    }
+    
+    func part2(_ grid: Grid2D<Character>) -> Set<Point2D> {
+        let pointsByFrequency: [Character: Set<Point2D>] = grid.reduce(into: [:], { result, pair in
+            let (point, frequency) = pair
+            result[frequency, default: []].insert(point)
         })
+        
+        return pointsByFrequency.values.reduce(into: Set<Point2D>()) { locations, points in
+            let antinodesForFrequency: Set<Point2D> = points.combinations(ofCount: 2)
+                .reduce(into: []) { antinodes, combination in
+                    let translation = combination[0].translation(to: combination[1])
+                    let normalizedTranslation = translation.normalized
+                    
+                    var current = combination[0]
+                    while grid.isPointInside(current) {
+                        antinodes.insert(current)
+                        
+                        current.apply(-normalizedTranslation)
+                    }
+                    
+                    current = combination[0]
+                    while grid.isPointInside(current) {
+                        antinodes.insert(current)
+                        
+                        current.apply(normalizedTranslation)
+                    }
+                }
+            locations.formUnion(antinodesForFrequency)
+        }
     }
 }
 
 extension CharacterSet {
     func containsUnicodeScalars(of character: Character) -> Bool {
         character.unicodeScalars.allSatisfy(contains)
+    }
+}
+
+private extension Translation2D {
+    var normalized: Translation2D {
+        let greatestMagnitude = max(abs(deltaX), abs(deltaY))
+        
+        if greatestMagnitude == 0 {
+            return self
+        }
+        
+        guard deltaX.isDivisible(by: greatestMagnitude), deltaY.isDivisible(by: greatestMagnitude) else {
+            return self
+        }
+        
+        return Self(
+            deltaX: deltaX / greatestMagnitude,
+            deltaY: deltaY / greatestMagnitude
+        )
+    }
+}
+
+extension Int {
+    func isDivisible(by other: Int) -> Bool {
+        quotientAndRemainder(dividingBy: other).remainder == 0
     }
 }
