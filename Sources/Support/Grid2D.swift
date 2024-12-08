@@ -95,6 +95,10 @@ struct Point2D: Hashable {
     var x: Int
     var y: Int
     
+    func translation(to other: Point2D) -> Translation2D {
+        Translation2D(deltaX: other.x - x, deltaY: other.y - y)
+    }
+    
     func manhattanDistance(to position: Point2D) -> Int {
         abs(x - position.x) + abs(y - position.y)
     }
