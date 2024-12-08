@@ -110,25 +110,6 @@ extension CharacterSet {
     }
 }
 
-private extension Translation2D {
-    var normalized: Translation2D {
-        let greatestMagnitude = max(abs(deltaX), abs(deltaY))
-        
-        if greatestMagnitude == 0 {
-            return self
-        }
-        
-        guard deltaX.isDivisible(by: greatestMagnitude), deltaY.isDivisible(by: greatestMagnitude) else {
-            return self
-        }
-        
-        return Self(
-            deltaX: deltaX / greatestMagnitude,
-            deltaY: deltaY / greatestMagnitude
-        )
-    }
-}
-
 extension Int {
     func isDivisible(by other: Int) -> Bool {
         quotientAndRemainder(dividingBy: other).remainder == 0
