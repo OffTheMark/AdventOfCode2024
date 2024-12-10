@@ -30,8 +30,12 @@ struct Day9: DayCommand {
         print("Filesystem checksum of compacted disk:", fileSystemChecksum, terminator: "\n\n")
         
         printTitle("Part 2", level: .title1)
-        let fileSystemChecksumAfterCompactingWithNewMethod = part2(disk: disk)
+        let clock = ContinuousClock()
+        let (elapsedTime, fileSystemChecksumAfterCompactingWithNewMethod) = clock.measure {
+            part2(disk: disk)
+        }
         print("Filesystem checksum of compacted disk using new method:", fileSystemChecksumAfterCompactingWithNewMethod)
+        print("Elapsed time: \(elapsedTime)")
     }
     
     func disk() throws -> [DiskSlot] {
