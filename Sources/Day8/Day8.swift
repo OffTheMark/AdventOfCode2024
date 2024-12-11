@@ -2,7 +2,7 @@
 //  Day8.swift
 //  AdventOfCode2024
 //
-//  Created by Marc-Antoine Malépart on 2024-12-04.
+//  Created by Marc-Antoine Malépart on 2024-12-08.
 //
 
 import Foundation
