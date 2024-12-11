@@ -28,25 +28,33 @@ struct Day10: DayCommand {
         
         let clock = ContinuousClock()
         
-        printTitle("Part 1", level: .title1)
-        let (part1Duration, sumOfTrailheadScores) = clock.measure {
-            part1(grid)
+        printTitle("Map trails", level: .title1)
+        let (mappingDuration, trails) = clock.measure {
+            distinctTrails(in: grid)
         }
-        print("Sum of scores of all trailheads:", sumOfTrailheadScores)
-        print("Elapsed time:", part1Duration, terminator: "\n\n")
+        print("Elapsed time:", mappingDuration, terminator: "\n\n")
+        
+        printTitle("Part 1", level: .title1)
+        let sumOfTrailheadScores = part1(trails)
+        print("Sum of scores of all trailheads:", sumOfTrailheadScores, terminator: "\n\n")
+        
+        printTitle("Part 2", level: .title1)
+        let sumOfTrailheadRatings = part2(trails)
+        print("Sum of ratings of all trailheads:", sumOfTrailheadRatings)
     }
     
-    func part1(_ grid: Grid2D<Int>) -> Int {
+    private func distinctTrails(in grid: Grid2D<Int>) -> Set<Path> {
         let startingPoints: Set<Point2D> = grid.reduce(into: []) { result, element in
             let (point, height) = element
             if height == 0 {
                 result.insert(point)
             }
         }
-        var pathsByEnds = [PathEnds: Path]()
+        var trails = Set<Path>()
         let validMoves: [Translation2D] = [.up, .right, .down, .left]
         
         for startingPoint in startingPoints {
+            // Map all paths starting from each start point using breadth-first search (BFS)
             var queue: Deque<Path> = [[startingPoint]]
             
             while let path = queue.popFirst() {
@@ -54,16 +62,7 @@ struct Day10: DayCommand {
                 let height = grid[lastPoint]!
                 
                 if height == 9 {
-                    let ends = PathEnds(start: path.first!, end: lastPoint)
-                    
-                    if let existingPath = pathsByEnds[ends] {
-                        if existingPath.count < path.count {
-                            pathsByEnds[ends] = path
-                        }
-                    }
-                    else {
-                        pathsByEnds[ends] = path
-                    }
+                    trails.insert(path)
                     continue
                 }
                 
@@ -77,11 +76,19 @@ struct Day10: DayCommand {
             }
         }
         
-        let scoresByTrailhead: [Point2D: Int] = pathsByEnds.keys.reduce(into: [:]) { result, ends in
-            result[ends.start, default: 0] += 1
+        return trails
+    }
+    
+    private func part1(_ trails: Set<Path>) -> Int {
+        let distinctPathEnds: Set<PathEnds> = trails.reduce(into: []) { result, trail in
+            let ends = PathEnds(start: trail.first!, end: trail.last!)
+            result.insert(ends)
         }
-        
-        return scoresByTrailhead.values.reduce(0, +)
+        return distinctPathEnds.count
+    }
+    
+    private func part2(_ trails: Set<Path>) -> Int {
+        trails.count
     }
 }
 
