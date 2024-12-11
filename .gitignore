@@ -8,6 +8,6 @@ DerivedData/
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
 
-Sources/Day*/test_input.txt
-Sources/Day*/test_input*.txt
-Sources/Day*/puzzle_input.txt
+Sources/Day**/test_input.txt
+Sources/Day**/test_input*.txt
+Sources/Day**/puzzle_input.txt
