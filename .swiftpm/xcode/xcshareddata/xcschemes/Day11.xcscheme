@@ -52,7 +52,7 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "day11 &quot;/Users/mantoine.malepart/Documents/Projects/macos/AdventOfCode2024/Sources/Day11/test_input.txt&quot;"
+            argument = "day11 &quot;/Users/mantoine.malepart/Documents/Projects/macos/AdventOfCode2024/Sources/Day11/puzzle_input.txt&quot;"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
