@@ -14,6 +14,7 @@ struct Grid2D<Value> {
     
     let frame: Frame2D
     
+    var points: Dictionary<Point2D, Value>.Keys { valuesByPosition.keys }
     
     func hasValue(at position: Point2D) -> Bool {
         valuesByPosition.keys.contains(position)
