@@ -50,46 +50,51 @@ struct Day11: DayCommand {
     
     private func blinkStones(_ countsByStone: [Int: Int], numberOfTimes: Int) -> [Int: Int] {
         var currentCountsByStone = countsByStone
+        let nextStonesForStone = memoize(nextStones(for:))
         
         for _ in 0 ..< numberOfTimes {
             var nextCountsByStone = [Int: Int]()
             
             stoneLoop: for (stone, count) in currentCountsByStone {
-                if stone == 0 {
-                    nextCountsByStone[1, default: 0] += count
-                    continue stoneLoop
+                let nextStones = nextStonesForStone(stone)
+                for nextStone in nextStones {
+                    nextCountsByStone[nextStone, default: 0] += count
                 }
-                
-                let digits = stone.digits
-                let numberOfDigits = digits.count
-                
-                if numberOfDigits.isMultiple(of: 2) {
-                    let middleIndex = numberOfDigits / 2
-                    
-                    let leftDigits = digits[..<middleIndex]
-                    let leftStone = leftDigits.enumerated().reduce(into: 0) { result, element in
-                        let (index, digit) = element
-                        result += digit * Int(pow(10, Double(middleIndex - index - 1)))
-                    }
-                    
-                    let rightDigits = digits[middleIndex...]
-                    let rightStone = rightDigits.enumerated().reduce(into: 0) { result, element in
-                        let (index, digit) = element
-                        result += digit * Int(pow(10, Double(middleIndex - index - 1)))
-                    }
-                    
-                    nextCountsByStone[leftStone, default: 0] += count
-                    nextCountsByStone[rightStone, default: 0] += count
-                    continue stoneLoop
-                }
-                
-                nextCountsByStone[stone * 2024, default: 0] += count
             }
             
             currentCountsByStone = nextCountsByStone
         }
         
         return currentCountsByStone
+    }
+    
+    private func nextStones(for stone: Int) -> [Int] {
+        if stone == 0 {
+            return [0]
+        }
+        
+        let digits = stone.digits
+        let numberOfDigits = digits.count
+        
+        if numberOfDigits.isMultiple(of: 2) {
+            let middleIndex = numberOfDigits / 2
+            
+            let leftDigits = digits[..<middleIndex]
+            let leftStone = leftDigits.enumerated().reduce(into: 0) { result, element in
+                let (index, digit) = element
+                result += digit * Int(pow(10, Double(middleIndex - index - 1)))
+            }
+            
+            let rightDigits = digits[middleIndex...]
+            let rightStone = rightDigits.enumerated().reduce(into: 0) { result, element in
+                let (index, digit) = element
+                result += digit * Int(pow(10, Double(middleIndex - index - 1)))
+            }
+            
+            return [leftStone, rightStone]
+        }
+        
+        return [stone * 2024]
     }
 }
 
