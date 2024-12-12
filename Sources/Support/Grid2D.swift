@@ -11,23 +11,16 @@ import Foundation
 
 struct Grid2D<Value> {
     private(set) var valuesByPosition: [Point2D: Value]
-    let origin: Point2D
-    let size: Size2D
     
-    var columns: Range<Int> { origin.x ..< origin.x + size.width }
-    var rows: Range<Int> { origin.y ..< origin.y + size.height }
+    let frame: Frame2D
     
-    var minX: Int { origin.x }
-    var miny: Int { origin.y }
-    var maxX: Int { origin.x + size.width - 1 }
-    var maxY: Int { origin.y + size.height - 1 }
     
     func hasValue(at position: Point2D) -> Bool {
         valuesByPosition.keys.contains(position)
     }
     
     func isPointInside(_ point: Point2D) -> Bool {
-        rows.contains(point.y) && columns.contains(point.x)
+        frame.contains(point)
     }
     
     subscript(point: Point2D) -> Value? {
@@ -78,14 +71,40 @@ extension Grid2D {
         })
         
         self.valuesByPosition = valuesByPosition
-        self.origin = .zero
-        self.size = size
+        self.frame = Frame2D(origin: .zero, size: size)
     }
 }
 
 extension Grid2D where Value: RawRepresentable, Value.RawValue == Character {
     init(rawValue: String) {
         self.init(rawValue: rawValue, valueForCharacter: Value.init)
+    }
+}
+
+// MARK: Frame2D
+
+struct Frame2D {
+    var origin: Point2D
+    var size: Size2D
+    
+    func contains(_ point: Point2D) -> Bool {
+        rows.contains(point.y) && columns.contains(point.x)
+    }
+    
+    var columns: Range<Int> {
+        origin.x ..< origin.x + size.width
+    }
+    var rows: Range<Int> {
+        origin.y ..< origin.y + size.height
+    }
+    
+    var minX: Int { origin.x }
+    var minY: Int { origin.y }
+    var maxX: Int {
+        origin.x + size.width - 1
+    }
+    var maxY: Int {
+        origin.y + size.height - 1
     }
 }
 
