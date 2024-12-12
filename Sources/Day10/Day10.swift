@@ -44,12 +44,7 @@ struct Day10: DayCommand {
     }
     
     private func distinctTrails(in grid: Grid2D<Int>) -> Set<Path> {
-        let startingPoints: Set<Point2D> = grid.reduce(into: []) { result, element in
-            let (point, height) = element
-            if height == 0 {
-                result.insert(point)
-            }
-        }
+        let startingPoints = Set(grid.points.filter({ grid[$0] == 0 }))
         var trails = Set<Path>()
         let validMoves: [Translation2D] = [.up, .right, .down, .left]
         

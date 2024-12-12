@@ -40,12 +40,7 @@ struct Day4: DayCommand {
     }
     
     func part1(_ grid: Grid2D<Character>) -> Int {
-        let pointsOfLetterX: Set<Point2D> = grid.reduce(into: []) { result, pair in
-            let (point, letter) = pair
-            if letter == "X" {
-                result.insert(point)
-            }
-        }
+        let pointsOfLetterX = Set(grid.points.filter({ grid[$0] == "X" }))
         let restOfXMAS = "MAS"
         let remainingLettersByOffset: [Int: Character] = restOfXMAS.indexed().reduce(into: [:]) { result, pair in
             let (index, character) = pair
