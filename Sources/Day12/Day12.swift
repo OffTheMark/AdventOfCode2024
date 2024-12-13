@@ -63,6 +63,7 @@ struct Day12: DayCommand {
             let cornerCount = gardenPlot.cornerCount()
             let area = gardenPlot.area()
             printGardenPlot(gardenPlot, in: grid)
+            print("Corners:", cornerCount)
             totalPrice += cornerCount * area
         }
     }
@@ -181,7 +182,7 @@ extension GardenPlot {
     func cornerCount() -> Int {
         let perimeterPoints = perimeterPoints()
         
-        let corners: Set<Corner> = perimeterPoints.reduce(into: []) { corners, point in
+        let cornerCount = reduce(into: 0) { cornerCount, point in
             let up = point.applying(.up)
             let upRight = point.applying(.upRight)
             let right = point.applying(.right)
@@ -191,48 +192,23 @@ extension GardenPlot {
             let left = point.applying(.left)
             let upLeft = point.applying(.upLeft)
             
-            // Exterior corners
-            if isDisjoint(with: [left, up]) {
-                corners.insert(Corner(point: point, direction: .upLeft))
-            }
-            if isDisjoint(with: [up, right]) {
-                corners.insert(Corner(point: point, direction: .upRight))
-            }
-            if isDisjoint(with: [right, down]) {
-                corners.insert(Corner(point: point, direction: .downRight))
-            }
-            if isDisjoint(with: [down, left]) {
-                corners.insert(Corner(point: point, direction: .downLeft))
-            }
+            let triosOfNeighbors: [(vertical: Point2D, diagonal: Point2D, horizontal: Point2D)] = [
+                (up, upLeft, left),
+                (up, upRight, right),
+                (down, downLeft, left),
+                (down, downRight, right),
+            ]
             
-            // Interior corners
-            if contains(upLeft), !contains(up) {
-                corners.insert(Corner(point: left, direction: .upRight))
-            }
-            if contains(upLeft), !contains(left) {
-                corners.insert(Corner(point: up, direction: .downLeft))
-            }
-            if contains(upRight), !contains(up) {
-                corners.insert(Corner(point: right, direction: .upLeft))
-            }
-            if contains(upRight), !contains(right) {
-                corners.insert(Corner(point: up, direction: .downRight))
-            }
-            
-            if contains(downRight), !contains(down) {
-                corners.insert(Corner(point: right, direction: .downLeft))
-            }
-            if contains(downRight), !contains(right) {
-                corners.insert(Corner(point: down, direction: .upRight))
-            }
-            if contains(downLeft), !contains(down) {
-                corners.insert(Corner(point: left, direction: .downRight))
-            }
-            if contains(downLeft), !contains(left) {
-                corners.insert(Corner(point: down, direction: .upLeft))
+            for (vertical, diagonal, horizontal) in triosOfNeighbors {
+                let isExteriorCorner = !contains(vertical) && !contains(horizontal)
+                let isInteriorCorner = contains(vertical) && contains(horizontal) && !contains(diagonal)
+                
+                if isExteriorCorner || isInteriorCorner {
+                    cornerCount += 1
+                }
             }
         }
-        return corners.count
+        return cornerCount
     }
 }
 
