@@ -33,33 +33,19 @@ struct Day14: DayCommand {
         }
         print("Safety factory after 100 seconds:", safetyFactorAfter100Seconds)
         print("Elapsed time:", part1Duration, terminator: "\n\n")
+        
+        printTitle("Part 2", level: .title1)
+        let part2Duration = clock.measure {
+            part2(robots: robots, frame: frame)
+        }
+        print("Elapsed time:", part2Duration)
     }
     
     private func part1(robots: [Robot], frame: Frame2D) -> Int {
         var currentRobots = robots
         
         for _ in 0 ..< 100 {
-            let nextRobots = currentRobots.reduce(into: [Robot](), { result, robot in
-                var nextPosition = robot.position.applying(robot.velocity)
-                
-                if nextPosition.x < frame.minX {
-                    nextPosition.x += frame.size.width
-                }
-                if nextPosition.x > frame.maxX {
-                    nextPosition.x -= frame.size.width
-                }
-                if nextPosition.y < frame.minY {
-                    nextPosition.y += frame.size.height
-                }
-                if nextPosition.y > frame.maxY {
-                    nextPosition.y -= frame.size.height
-                }
-                
-                var newRobot = robot
-                newRobot.position = nextPosition
-                result.append(newRobot)
-            })
-            currentRobots = nextRobots
+            currentRobots = nextStep(currentRobots, in: frame)
         }
         
         let midX = frame.minX + frame.size.width / 2
@@ -76,6 +62,67 @@ struct Day14: DayCommand {
             })
         }
         return safetyRating
+    }
+    
+    private func part2(robots: [Robot], frame: Frame2D) {
+        var robots = robots
+        for secondsElapsed in 1... {
+            robots = nextStep(robots, in: frame)
+            
+            let pointsOfRobots = robots.reduce(into: Set<Point2D>()) { points, robot in
+                points.insert(robot.position)
+            }
+            
+            let output = output(pointsOfRobots: pointsOfRobots, in: frame)
+            
+            if pointsOfRobots.count == robots.count {
+                print("Number of seconds:", secondsElapsed)
+                print(output)
+                print(String(repeating: "=", count: frame.size.width))
+                break
+            }
+        }
+    }
+    
+    private func output(pointsOfRobots: Set<Point2D>, in frame: Frame2D) -> String {
+        frame.rows
+            .map { y in
+                let line = String(
+                    frame.columns.map({ x -> Character in
+                        let point = Point2D(x: x, y: y)
+                        return if pointsOfRobots.contains(point) {
+                            "#"
+                        }
+                        else {
+                            " "
+                        }
+                    })
+                )
+                return line
+            }
+            .joined(separator: "\n")
+    }
+    
+    private func nextStep(_ robots: [Robot], in frame: Frame2D) -> [Robot] {
+        robots.map { robot in
+            var robot = robot
+            var nextPosition = robot.position.applying(robot.velocity)
+            
+            if nextPosition.x < frame.minX {
+                nextPosition.x += frame.size.width
+            }
+            if nextPosition.x > frame.maxX {
+                nextPosition.x -= frame.size.width
+            }
+            if nextPosition.y < frame.minY {
+                nextPosition.y += frame.size.height
+            }
+            if nextPosition.y > frame.maxY {
+                nextPosition.y -= frame.size.height
+            }
+            robot.position = nextPosition
+            return robot
+        }
     }
 }
 
