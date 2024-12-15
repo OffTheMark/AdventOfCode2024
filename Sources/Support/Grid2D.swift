@@ -24,6 +24,15 @@ struct Grid2D<Value> {
         frame.contains(point)
     }
     
+    @discardableResult
+    mutating func removeValue(forPoint point: Point2D) -> Value? {
+        valuesByPosition.removeValue(forKey: point)
+    }
+    
+    mutating func updateValue(_ value: Value, forPoint point: Point2D) -> Value? {
+        valuesByPosition.updateValue(value, forKey: point)
+    }
+    
     subscript(point: Point2D) -> Value? {
         get {
             valuesByPosition[point]
