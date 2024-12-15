@@ -16,6 +16,11 @@ struct Grid2D<Value> {
     
     var points: Dictionary<Point2D, Value>.Keys { valuesByPosition.keys }
     
+    init(frame: Frame2D) {
+        self.valuesByPosition = [:]
+        self.frame = frame
+    }
+    
     func hasValue(at position: Point2D) -> Bool {
         valuesByPosition.keys.contains(position)
     }
@@ -88,6 +93,23 @@ extension Grid2D {
 extension Grid2D where Value: RawRepresentable, Value.RawValue == Character {
     init(rawValue: String) {
         self.init(rawValue: rawValue, valueForCharacter: Value.init)
+    }
+    
+    func debugOutput() -> String {
+        frame.rows.map({ y in
+            String(
+                frame.columns.map({ x in
+                    let point = Point2D(x: x, y: y)
+                    return if let value = self[point] {
+                        value.rawValue
+                    }
+                    else {
+                        "."
+                    }
+                })
+            )
+        })
+        .joined(separator: "\n")
     }
 }
 
