@@ -180,8 +180,6 @@ extension GardenPlot {
     }
     
     func cornerCount() -> Int {
-        let perimeterPoints = perimeterPoints()
-        
         let cornerCount = reduce(into: 0) { cornerCount, point in
             let up = point.applying(.up)
             let upRight = point.applying(.upRight)
