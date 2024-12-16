@@ -117,7 +117,7 @@ struct Day15: DayCommand {
             grid[point] == .robot
         })!
         
-        for (index, move) in moves.enumerated() {
+        for move in moves {
             let translation = move.translation
             let nextPoint = pointOfRobot.applying(translation)
             
