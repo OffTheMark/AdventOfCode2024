@@ -120,14 +120,14 @@ struct Day16: DayCommand {
             }
             
             for nextAvailableNode in nextAvailableNodes {
-                let canEnqueue = if let score = lowestScoreByState[nextAvailableNode.state] {
-                    score >= nextAvailableNode.score && nextAvailableNode.score <= lowestScore
+                let shouldContinue = if let lowestScoreForState = lowestScoreByState[nextAvailableNode.state] {
+                    lowestScoreForState >= nextAvailableNode.score && nextAvailableNode.score <= lowestScore
                 }
                 else {
                     true
                 }
                 
-                if canEnqueue {
+                if shouldContinue {
                     let lowestScoreForState = if let existingScore = lowestScoreByState[nextAvailableNode.state] {
                         min(existingScore, nextAvailableNode.score)
                     }
