@@ -24,114 +24,33 @@ struct Day16: DayCommand {
     
     func run() throws {
         let grid = Grid2D<Tile>(rawValue: try readFile())
+        let start = grid.points.first(where: { grid[$0] == .start })!
+        let end = grid.points.first(where: { grid[$0] == .end })!
         
         let clock = ContinuousClock()
-        printTitle("Part 1", level: .title1)
-        let (part1Duration, lowestScore) = clock.measure {
-            part1(grid)
+        printTitle("Mapping shortest paths", level: .title1)
+        let (mappingDuration, result) = clock.measure {
+            shortestPaths(from: start, to: end, in: grid)
         }
-        print("Lowest score:", lowestScore)
-        print("Elapsed time:", part1Duration, terminator: "\n\n")
+        print("Elapsed time:", mappingDuration, terminator: "\n\n")
+        
+        printTitle("Part 1", level: .title1)
+        print("Lowest score:", result.lowestScore, terminator: "\n\n")
         
         printTitle("Part 2", level: .title1)
-        let (part2Duration, bestSeatCount) = clock.measure {
-            part2(grid: grid, lowestScore: lowestScore)
-        }
+        let bestSeatCount = result.paths
+            .reduce(into: Set<Point2D>()) { result, path in
+                result.formUnion(path.visited.map(\.point))
+            }
+            .count
         print("Lowest score:", bestSeatCount)
-        print("Elapsed time:", part2Duration)
     }
     
-    private func part1(_ grid: Grid2D<Tile>) -> Int {
-        let start = grid.points.first(where: { grid[$0] == .start })!
-        let end = grid.points.first(where: { grid[$0] == .end })!
-        return shortestPath(from: start, to: end, in: grid).score
-    }
-    
-    private func part2(grid: Grid2D<Tile>, lowestScore: Int) -> Int {
-        let start = grid.points.first(where: { grid[$0] == .start })!
-        let end = grid.points.first(where: { grid[$0] == .end })!
-        let paths = paths(from: start, to: end, scoring: lowestScore, in: grid)
-        let bestSeats = paths.reduce(into: Set<Point2D>()) { result, path in
-            result.formUnion(path.visited.map(\.point))
-        }
-        return bestSeats.count
-    }
-    
-    private func shortestPath(from start: Point2D, to end: Point2D, in grid: Grid2D<Tile>) -> Node {
-        let startState = State(point: start, direction: .right)
-        let startNode = Node(
-            state: startState,
-            visited: [startState],
-            score: 0
-        )
-        
-        var heap: Heap<Node> = [startNode]
-        var lowestScoreByState: [State: Int] = [startState: startNode.score]
-        
-        while let current = heap.popMin() {
-            if current.state.point == end {
-                return current
-            }
-            
-            var nextAvailableNodes = [Node]()
-            
-            let forwardState = current.state.forward()
-            if grid.isPointInside(forwardState.point),
-               grid[forwardState.point] != .wall,
-               !current.visited.contains(forwardState) {
-                let next = Node(
-                    state: forwardState,
-                    visited: current.visited.union([forwardState]),
-                    score: current.score + 1
-                )
-                
-                nextAvailableNodes.append(next)
-            }
-            
-            let leftState = current.state.turningLeft()
-            if !current.visited.contains(leftState) {
-                let next = Node(
-                    state: leftState,
-                    visited: current.visited.union([leftState]),
-                    score: current.score + 1_000
-                )
-                nextAvailableNodes.append(next)
-            }
-            
-            let rightState = current.state.turningRight()
-            if !current.visited.contains(rightState) {
-                let next = Node(
-                    state: rightState,
-                    visited: current.visited.union([rightState]),
-                    score: current.score + 1_000
-                )
-                nextAvailableNodes.append(next)
-            }
-            
-            for nextAvailableNode in nextAvailableNodes {
-                let canEnqueue = if let score = lowestScoreByState[nextAvailableNode.state] {
-                    score > nextAvailableNode.score
-                }
-                else {
-                    true
-                }
-                
-                if canEnqueue {
-                    lowestScoreByState[nextAvailableNode.state] = nextAvailableNode.score
-                    heap.insert(nextAvailableNode)
-                }
-            }
-        }
-        
-        fatalError("Could not find shortest path")
-    }
-    
-    private func paths(
+    private func shortestPaths(
         from start: Point2D,
         to end: Point2D,
-        scoring targetScore: Int,
         in grid: Grid2D<Tile>
-    ) -> Set<Node> {
+    ) -> (lowestScore: Int, paths: Set<Node>) {
         let startState = State(point: start, direction: .right)
         let startNode = Node(
             state: startState,
@@ -142,12 +61,16 @@ struct Day16: DayCommand {
         var heap: Heap<Node> = [startNode]
         var paths = Set<Node>()
         var lowestScoreByState: [State: Int] = [startState: startNode.score]
+        var lowestScore: Int = .max
         
         while let current = heap.popMin() {
             if current.state.point == end {
-                if current.score == targetScore {
+                lowestScore = min(lowestScore, current.score)
+                
+                if current.score <= lowestScore {
                     paths.insert(current)
                 }
+                
                 continue
             }
             
@@ -198,7 +121,7 @@ struct Day16: DayCommand {
             
             for nextAvailableNode in nextAvailableNodes {
                 let canEnqueue = if let score = lowestScoreByState[nextAvailableNode.state] {
-                    score >= nextAvailableNode.score && nextAvailableNode.score <= targetScore
+                    score >= nextAvailableNode.score && nextAvailableNode.score <= lowestScore
                 }
                 else {
                     true
@@ -218,7 +141,7 @@ struct Day16: DayCommand {
             }
         }
         
-        return paths
+        return (lowestScore, paths)
     }
 }
 
