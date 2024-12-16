@@ -32,12 +32,33 @@ struct Day16: DayCommand {
         }
         print("Lowest score:", lowestScore)
         print("Elapsed time:", part1Duration, terminator: "\n\n")
+        
+        printTitle("Part 2", level: .title1)
+        let (part2Duration, bestSeatCount) = clock.measure {
+            part2(grid: grid, lowestScore: lowestScore)
+        }
+        print("Lowest score:", bestSeatCount)
+        print("Elapsed time:", part2Duration)
     }
     
     private func part1(_ grid: Grid2D<Tile>) -> Int {
-        let pointOfStart = grid.points.first(where: { grid[$0] == .start })!
-        let pointOfEnd = grid.points.first(where: { grid[$0] == .end })!
-        let startState = State(point: pointOfStart, direction: .right)
+        let start = grid.points.first(where: { grid[$0] == .start })!
+        let end = grid.points.first(where: { grid[$0] == .end })!
+        return shortestPath(from: start, to: end, in: grid).score
+    }
+    
+    private func part2(grid: Grid2D<Tile>, lowestScore: Int) -> Int {
+        let start = grid.points.first(where: { grid[$0] == .start })!
+        let end = grid.points.first(where: { grid[$0] == .end })!
+        let paths = paths(from: start, to: end, scoring: lowestScore, in: grid)
+        let bestSeats = paths.reduce(into: Set<Point2D>()) { result, path in
+            result.formUnion(path.visited.map(\.point))
+        }
+        return bestSeats.count
+    }
+    
+    private func shortestPath(from start: Point2D, to end: Point2D, in grid: Grid2D<Tile>) -> Node {
+        let startState = State(point: start, direction: .right)
         let startNode = Node(
             state: startState,
             visited: [startState],
@@ -48,8 +69,8 @@ struct Day16: DayCommand {
         var lowestScoreByState: [State: Int] = [startState: startNode.score]
         
         while let current = heap.popMin() {
-            if current.state.point == pointOfEnd {
-                return current.score
+            if current.state.point == end {
+                return current
             }
             
             var nextAvailableNodes = [Node]()
@@ -103,6 +124,101 @@ struct Day16: DayCommand {
         }
         
         fatalError("Could not find shortest path")
+    }
+    
+    private func paths(
+        from start: Point2D,
+        to end: Point2D,
+        scoring targetScore: Int,
+        in grid: Grid2D<Tile>
+    ) -> Set<Node> {
+        let startState = State(point: start, direction: .right)
+        let startNode = Node(
+            state: startState,
+            visited: [startState],
+            score: 0
+        )
+        
+        var heap: Heap<Node> = [startNode]
+        var paths = Set<Node>()
+        var lowestScoreByState: [State: Int] = [startState: startNode.score]
+        
+        while let current = heap.popMin() {
+            if current.state.point == end {
+                if current.score == targetScore {
+                    paths.insert(current)
+                }
+                continue
+            }
+            
+            var nextAvailableNodes = [Node]()
+            
+            let forwardState = current.state.forward()
+            if grid.isPointInside(forwardState.point),
+               grid[forwardState.point] != .wall,
+               !current.visited.contains(forwardState) {
+                let next = Node(
+                    state: forwardState,
+                    visited: current.visited.union([forwardState]),
+                    score: current.score + 1
+                )
+                
+                nextAvailableNodes.append(next)
+            }
+            
+            let leftState = current.state.turningLeft()
+            if !current.visited.contains(leftState) {
+                let wouldHaveTurnedLeftTwice = current.visited.contains(leftState.turningRight()) &&
+                    current.visited.contains(leftState.turningRight().turningRight())
+                
+                if !wouldHaveTurnedLeftTwice {
+                    let next = Node(
+                        state: leftState,
+                        visited: current.visited.union([leftState]),
+                        score: current.score + 1_000
+                    )
+                    nextAvailableNodes.append(next)
+                }
+            }
+            
+            let rightState = current.state.turningRight()
+            if !current.visited.contains(rightState) {
+                let wouldHaveTurnedRightTwice = current.visited.contains(rightState.turningLeft()) &&
+                    current.visited.contains(rightState.turningLeft().turningLeft())
+                
+                if !wouldHaveTurnedRightTwice {
+                    let next = Node(
+                        state: rightState,
+                        visited: current.visited.union([rightState]),
+                        score: current.score + 1_000
+                    )
+                    nextAvailableNodes.append(next)
+                }
+            }
+            
+            for nextAvailableNode in nextAvailableNodes {
+                let canEnqueue = if let score = lowestScoreByState[nextAvailableNode.state] {
+                    score >= nextAvailableNode.score && nextAvailableNode.score <= targetScore
+                }
+                else {
+                    true
+                }
+                
+                if canEnqueue {
+                    let lowestScoreForState = if let existingScore = lowestScoreByState[nextAvailableNode.state] {
+                        min(existingScore, nextAvailableNode.score)
+                    }
+                    else {
+                        nextAvailableNode.score
+                    }
+                    
+                    lowestScoreByState[nextAvailableNode.state] = lowestScoreForState
+                    heap.insert(nextAvailableNode)
+                }
+            }
+        }
+        
+        return paths
     }
 }
 
