@@ -58,6 +58,7 @@ struct Day16: DayCommand {
             score: 0
         )
         
+        // Use Dijkstra's algorithm to find all shortest paths from start to end
         var heap: Heap<Node> = [startNode]
         var paths = Set<Node>()
         var lowestScoreByState: [State: Int] = [startState: startNode.score]
