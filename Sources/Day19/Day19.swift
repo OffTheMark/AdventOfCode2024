@@ -47,7 +47,7 @@ struct Day19: DayCommand {
         })
     }
     
-    private func isDesign(_ design: String, possibleWith availablePatterns: Set<String>) -> Bool {
+    private func isDesign(_ design: String, possibleWith availablePatterns: [String]) -> Bool {
         let designCount = design.count
         
         let startNode = Node(
@@ -126,7 +126,7 @@ private struct Node: Hashable {
 }
 
 private struct Input {
-    let availablePatterns: Set<String>
+    let availablePatterns: [String]
     let desiredDesigns: [String]
 }
 
@@ -143,7 +143,7 @@ extension Input {
                     pattern
                 }
             } transform: {
-                Set(String($0).components(separatedBy: ", "))
+                String($0).components(separatedBy: ", ")
             }
             
             "\n\n"
