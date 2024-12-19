@@ -32,11 +32,32 @@ struct Day17: DayCommand {
         }
         print("Output:", output.map(String.init).joined(separator: ","))
         print("Elapsed time:", part1Duration, terminator: "\n\n")
+        
+        printTitle("Part 2", level: .title1)
+        let (part2Duration, registerA) = clock.measure {
+            part2(computer)
+        }
+        print("Lowest positive initial value for register A:", registerA)
+        print("Elapsed time:", part2Duration, terminator: "\n\n")
     }
     
     private func part1(_ computer: Computer) -> [Int] {
         var computer = computer
         return computer.run()
+    }
+    
+    private func part2(_ computer: Computer) -> Int {
+        for registerA in 0... {
+            var copy = computer
+            copy.registerA = registerA
+            let output = copy.run()
+            
+            if output == copy.program {
+                return registerA
+            }
+        }
+        
+        fatalError("Should not happen")
     }
 }
 
@@ -52,9 +73,9 @@ private enum Instruction: Int {
 }
 
 private struct Computer {
-    private(set) var registerA: Int
-    private(set) var registerB: Int
-    private(set) var registerC: Int
+    var registerA: Int
+    var registerB: Int
+    var registerC: Int
     let program: [Int]
     
     mutating func run() -> [Int] {
