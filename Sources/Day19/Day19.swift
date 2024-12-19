@@ -32,6 +32,13 @@ struct Day19: DayCommand {
         }
         print("Number of possible designs:", numberOfPossibleDesigns)
         print("Elapsed time:", part1Duration, terminator: "\n\n")
+        
+        printTitle("Part 2", level: .title1)
+        let (part2Duration, totalNumberOfWaysToMakeDesigns) = clock.measure {
+            part2(input)
+        }
+        print("Total number of ways to make desired designs:", totalNumberOfWaysToMakeDesigns)
+        print("Elapsed time:", part2Duration)
     }
     
     private func part1(_ input: Input) -> Int {
@@ -87,6 +94,29 @@ struct Day19: DayCommand {
         }
         
         return false
+    }
+    
+    private func part2(_ input: Input) -> Int {
+        let memoizedCombinations = recursiveMemoize { (numberOfCombinations: (String) -> Int, design: String) -> Int in
+            if design.isEmpty {
+                return 1
+            }
+            
+            return input.availablePatterns.reduce(into: 0, { sum, pattern in
+                guard design.starts(with: pattern) else {
+                    return
+                }
+                
+                let remaining = String(design.dropFirst(pattern.count))
+                let countOfRemaining = numberOfCombinations(remaining)
+                sum += countOfRemaining
+            })
+        }
+        
+        return input.desiredDesigns.reduce(into: 0) { sum, design in
+            let combinations = memoizedCombinations(design)
+            sum += combinations
+        }
     }
 }
 
