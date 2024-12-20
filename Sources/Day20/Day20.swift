@@ -21,6 +21,9 @@ struct Day20: DayCommand {
     @Argument(help: "Puzzle input path")
     var puzzleInputPath: String
     
+    @Option(name: .shortAndLong, help: "Threshold")
+    var threshold: Int
+    
     func run() throws {
         let grid = Grid2D<Tile>(rawValue: try readFile())
         
@@ -29,132 +32,96 @@ struct Day20: DayCommand {
         let (part1Duration, numberOfCheatsSavingEnoughTime) = clock.measure {
             part1(grid)
         }
-        print("Number of cheats that would save at least 100 picoseconds:", numberOfCheatsSavingEnoughTime)
+        print("Number of cheats that would save at least \(threshold) picoseconds:", numberOfCheatsSavingEnoughTime)
         print("Elapsed time:", part1Duration, terminator: "\n\n")
     }
     
     private func part1(_ grid: Grid2D<Tile>) -> Int {
         let start = grid.points.first(where: { grid[$0] == .start })!
         let end = grid.points.first(where: { grid[$0] == .end })!
-        let shortestPath = shortestPath(from: start, to: end, in: grid)
         
-        print("Shortest path:", shortestPath)
+        let clock = ContinuousClock()
+        let (pathDuration, shortestPath) = clock.measure {
+            self.shortestPath(from: start, to: end, in: grid)!
+        }
+        print("Shortest path:", shortestPath.score)
+        print("Elapsed time:", pathDuration)
         
         let cheatsSavingEnoughTime = cheats(
-            savingAtLeast: 1,
-            offShortestPath: shortestPath,
+            ofLength: 2,
+            savingAtLeast: threshold,
+            alongside: shortestPath,
             from: start,
             to: end,
             in: grid
         )
-        return cheatsSavingEnoughTime.count
+        return cheatsSavingEnoughTime
     }
     
     private func shortestPath(
         from start: Point2D,
         to end: Point2D,
         in grid: Grid2D<Tile>
-    ) -> Int {
+    ) -> Node? {
         let startNode = Node(
-            state: State(point: start),
-            visited: [start],
+            point: start,
+            path: [start],
             score: 0
         )
-        var heap: Heap<Node> = [startNode]
+        var queue: Deque<Node> = [startNode]
+        var visited = Set<Point2D>()
         var lowestScoreByPoint: [Point2D: Int] = [startNode.point: startNode.score]
         let availableMoves: [Translation2D] = [.up, .right, .down, .left]
         
-        while let current = heap.popMin() {
+        while let current = queue.popFirst() {
             if current.point == end {
-                return current.score
+                return current
             }
+            
+            visited.insert(current.point)
             
             for move in availableMoves {
                 let nextPoint = current.point.applying(move)
                 
                 guard grid.isPointInside(nextPoint),
                       grid[nextPoint] != .wall,
-                      !current.visited.contains(nextPoint) else {
+                      !visited.contains(nextPoint) else {
                     continue
                 }
                 
                 let nextNode = Node(
-                    state: State(point: nextPoint),
-                    visited: current.visited.union([nextPoint]),
+                    point: nextPoint,
+                    path: current.path + [nextPoint],
                     score: current.score + 1
                 )
                 
-                let shouldContinue = if let lowestScoreForPoint = lowestScoreByPoint[nextPoint] {
-                    lowestScoreForPoint >= nextNode.score
-                }
-                else {
-                    true
-                }
-                
+                let shouldContinue = lowestScoreByPoint[nextPoint, default: .max] >= nextNode.score
                 if shouldContinue {
                     lowestScoreByPoint[nextPoint] = nextNode.score
-                    heap.insert(nextNode)
+                    queue.append(nextNode)
                 }
             }
         }
         
-        fatalError("Could not find shortest path")
+        return nil
     }
     
     private func cheats(
+        ofLength cheatLength: Int,
         savingAtLeast savedTime: Int,
-        offShortestPath shortestPath: Int,
+        alongside node: Node,
         from start: Point2D,
         to end: Point2D,
         in grid: Grid2D<Tile>
-    ) -> Set<Node> {
-        var cheats: Set<Node> = []
-        let startNode = Node(
-            state: State(point: start),
-            visited: [start],
-            score: 0
-        )
-        var heap: Heap<Node> = [startNode]
-        var lowestScoreByState: [State: Int] = [startNode.state: startNode.score]
-        let availableMoves: [Translation2D] = [.up, .right, .down, .left]
+    ) -> Int {
+        var cheats = 0
         
-        while let current = heap.popMin() {
-            if current.point == end {
-                if current.score <= shortestPath - savedTime {
-                    cheats.insert(current)
-                    continue
-                }
+        for (distance, point) in node.path.enumerated().dropLast(savedTime) {
+            for (index, jumpedPoint) in node.path[(distance + savedTime)...].enumerated() {
+                let manhattanDistance = point.manhattanDistance(to: jumpedPoint)
                 
-                break
-            }
-            
-            let nextNodes: [Node] = availableMoves.compactMap { move in
-                let nextPoint = current.state.point.applying(move)
-                
-                guard grid.isPointInside(nextPoint) else {
-                    return nil
-                }
-                
-                if grid[nextPoint] != .wall {
-                    let nextNode = current.applying(move)
-                    return nextNode
-                }
-                
-                if !current.state.isCheating {
-                    let nextNode = current.applying(move, byCheating: true)
-                    return nextNode
-                }
-                    
-                return nil
-            }
-            
-            for nextNode in nextNodes {
-                let nextState = nextNode.state
-                
-                let shouldContinue = lowestScoreByState[nextState, default: .max] >= nextNode.score
-                if shouldContinue {
-                    lowestScoreByState[current.state] = nextNode.score
-                    heap.insert(nextNode)
+                if manhattanDistance <= cheatLength, manhattanDistance <= index {
+                    cheats += 1
                 }
             }
         }
@@ -163,34 +130,16 @@ struct Day20: DayCommand {
     }
 }
 
-private struct State: Hashable {
-    let point: Point2D
-    var cheatedPoint: Point2D?
-    
-    var isCheating: Bool { cheatedPoint != nil }
-}
-
 private struct Node: Hashable, Comparable {
-    let state: State
-    var point: Point2D { state.point }
-    let visited: Set<Point2D>
+    let point: Point2D
+    let path: [Point2D]
     let score: Int
     
-    func applying(_ translation: Translation2D, byCheating: Bool = false) -> Self {
+    func applying(_ translation: Translation2D) -> Self {
         let nextPoint = point.applying(translation)
-        let cheatedPoint: Point2D? = if byCheating, !state.isCheating {
-            nextPoint
-        }
-        else {
-            state.cheatedPoint
-        }
-        let nextState = State(
-            point: nextPoint,
-            cheatedPoint: cheatedPoint
-        )
         return Self(
-            state: nextState,
-            visited: visited.union([nextPoint]),
+            point: nextPoint,
+            path: path + [nextPoint],
             score: score + 1
         )
     }

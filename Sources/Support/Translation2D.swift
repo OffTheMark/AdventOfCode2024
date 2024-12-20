@@ -1,5 +1,5 @@
 //
-//  Point2D.swift
+//  Translation2D.swift
 //  AdventOfCode2024
 //
 //  Created by Marc-Antoine Malépart on 2024-12-08.
@@ -7,49 +7,51 @@
 
 import Foundation
 
-// MARK: Point2D
+// MARK: Translation2D
 
-struct Point2D: Hashable {
-    var x: Int
-    var y: Int
+struct Translation2D: Hashable {
+    var deltaX: Int
+    var deltaY: Int
     
-    func translation(to other: Point2D) -> Translation2D {
-        Translation2D(deltaX: other.x - x, deltaY: other.y - y)
-    }
-    
-    func manhattanDistance(to position: Point2D) -> Int {
-        abs(x - position.x) + abs(y - position.y)
-    }
-    
-    func adjacentPoints(includingDiagonals includesDiagonals: Bool) -> Set<Point2D> {
-        var translations: [Translation2D] = [
-            .up,
-            .right,
-            .down,
-            .left,
-        ]
-        if includesDiagonals {
-            translations += [
-                .upRight,
-                .downRight,
-                .downLeft,
-                .upLeft,
-            ]
+    var normalized: Translation2D {
+        let greatestMagnitude = max(abs(deltaX), abs(deltaY))
+        
+        if greatestMagnitude == 0 {
+            return self
         }
         
-        return Set(translations.map({ applying($0) }))
+        guard deltaX.isDivisible(by: greatestMagnitude), deltaY.isDivisible(by: greatestMagnitude) else {
+            return self
+        }
+        
+        return Self(
+            deltaX: deltaX / greatestMagnitude,
+            deltaY: deltaY / greatestMagnitude
+        )
     }
     
-    mutating func apply(_ translation: Translation2D) {
-        x += translation.deltaX
-        y += translation.deltaY
+    static let up = Self(deltaX: 0, deltaY: -1)
+    static let upRight = Self(deltaX: 1, deltaY: -1)
+    static let right = Self(deltaX: 1, deltaY: 0)
+    static let downRight = Self(deltaX: 1, deltaY: 1)
+    static let down = Self(deltaX: 0, deltaY: 1)
+    static let downLeft = Self(deltaX: -1, deltaY: 1)
+    static let left = Self(deltaX: -1, deltaY: 0)
+    static let upLeft = Self(deltaX: -1, deltaY: -1)
+    
+    static func * (lhs: Self, rhs: Int) -> Self {
+        Self(deltaX: lhs.deltaX * rhs, deltaY: lhs.deltaY * rhs)
     }
     
-    func applying(_ translation: Translation2D) -> Self {
-        var copy = self
-        copy.apply(translation)
-        return copy
+    static func *= (lhs: inout Self, rhs: Int) {
+        lhs = lhs * rhs
     }
     
-    static let zero = Self(x: 0, y: 0)
+    static func * (lhs: Int, rhs: Self) -> Self {
+        Self(deltaX: rhs.deltaX * lhs, deltaY: rhs.deltaY * lhs)
+    }
+    
+    static prefix func - (translation: Self) -> Self {
+        Self(deltaX: -translation.deltaX, deltaY: -translation.deltaY)
+    }
 }
