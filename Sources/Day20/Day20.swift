@@ -26,36 +26,50 @@ struct Day20: DayCommand {
     
     func run() throws {
         let grid = Grid2D<Tile>(rawValue: try readFile())
-        
-        let clock = ContinuousClock()
-        printTitle("Part 1", level: .title1)
-        let (part1Duration, numberOfCheatsSavingEnoughTime) = clock.measure {
-            part1(grid)
-        }
-        print("Number of cheats that would save at least \(threshold) picoseconds:", numberOfCheatsSavingEnoughTime)
-        print("Elapsed time:", part1Duration, terminator: "\n\n")
-    }
-    
-    private func part1(_ grid: Grid2D<Tile>) -> Int {
         let start = grid.points.first(where: { grid[$0] == .start })!
         let end = grid.points.first(where: { grid[$0] == .end })!
         
         let clock = ContinuousClock()
+        printTitle("Mapping shortest path", level: .title1)
         let (pathDuration, shortestPath) = clock.measure {
             self.shortestPath(from: start, to: end, in: grid)!
         }
         print("Shortest path:", shortestPath.score)
-        print("Elapsed time:", pathDuration)
+        print("Elapsed time:", pathDuration, terminator: "\n\n")
         
-        let cheatsSavingEnoughTime = cheats(
-            ofLength: 2,
-            savingAtLeast: threshold,
-            alongside: shortestPath,
-            from: start,
-            to: end,
-            in: grid
+        printTitle("Part 1", level: .title1)
+        let (part1Duration, cheatsOfLength2SavingEnoughTime) = clock.measure {
+            cheats(
+                ofLength: 2,
+                savingAtLeast: threshold,
+                alongside: shortestPath.path,
+                from: start,
+                to: end,
+                in: grid
+            )
+        }
+        print(
+            "Number of cheats of length 2 that would save at least \(threshold) picoseconds:",
+            cheatsOfLength2SavingEnoughTime
         )
-        return cheatsSavingEnoughTime
+        print("Elapsed time:", part1Duration, terminator: "\n\n")
+        
+        printTitle("Part 2", level: .title1)
+        let (part2Duration, cheatsOfLength20SavingEnoughTime) = clock.measure {
+            cheats(
+                ofLength: 20,
+                savingAtLeast: threshold,
+                alongside: shortestPath.path,
+                from: start,
+                to: end,
+                in: grid
+            )
+        }
+        print(
+            "Number of cheats of length 20 that would save at least \(threshold) picoseconds:",
+            cheatsOfLength20SavingEnoughTime
+        )
+        print("Elapsed time:", part2Duration)
     }
     
     private func shortestPath(
@@ -109,18 +123,18 @@ struct Day20: DayCommand {
     private func cheats(
         ofLength cheatLength: Int,
         savingAtLeast savedTime: Int,
-        alongside node: Node,
+        alongside path: [Point2D],
         from start: Point2D,
         to end: Point2D,
         in grid: Grid2D<Tile>
     ) -> Int {
         var cheats = 0
         
-        for (distance, point) in node.path.enumerated().dropLast(savedTime) {
-            for (index, jumpedPoint) in node.path[(distance + savedTime)...].enumerated() {
-                let manhattanDistance = point.manhattanDistance(to: jumpedPoint)
+        for (distanceToStart, jumpStart) in path.dropLast(savedTime).enumerated() {
+            for (distanceToEnd, jumpEnd) in path.dropFirst(distanceToStart + savedTime).enumerated() {
+                let manhattanDistance = jumpStart.manhattanDistance(to: jumpEnd)
                 
-                if manhattanDistance <= cheatLength, manhattanDistance <= index {
+                if manhattanDistance <= cheatLength, manhattanDistance <= distanceToEnd {
                     cheats += 1
                 }
             }
