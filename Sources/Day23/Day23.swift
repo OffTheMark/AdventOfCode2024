@@ -25,39 +25,52 @@ struct Day23: DayCommand {
         let connections = try readLines().compactMap(Connection.init)
         
         let clock = ContinuousClock()
+        printTitle("Calculating connected computers", level: .title1)
+        let (connectedComputersDuration, connectedComputersByComputer) = clock.measure {
+            self.connectedComputersByComputer(connections)
+        }
+        print("Elapsed time:", connectedComputersDuration, terminator: "\n\n")
+        
         printTitle("Part 1", level: .title1)
         let (part1Duration, numberOfSetsOfInterconnectedComputersStartingWithT) = clock.measure {
-            part1(connections)
+            part1(connectedComputersByComputer)
         }
         print(
             "Number of sets of interconnected computers starting with t:",
             numberOfSetsOfInterconnectedComputersStartingWithT
         )
         print("Elapsed time:", part1Duration, terminator: "\n\n")
+        
+        printTitle("Part 2", level: .title1)
+        let (part2Duration, password) = clock.measure {
+            part2(connectedComputersByComputer)
+        }
+        print("LAN party password:", password)
+        print("Elapsed time:", part2Duration)
     }
     
-    private func part1(_ connections: [Connection]) -> Int {
-        var connectedComputersByComputer = [String: Set<String>]()
-        
-        for connection in connections {
-            connectedComputersByComputer[connection.first, default: []].insert(connection.second)
-            connectedComputersByComputer[connection.second, default: []].insert(connection.first)
+    private func connectedComputersByComputer(_ connections: [Connection]) -> [String: Set<String>] {
+        connections.reduce(into: [:]) { result, connection in
+            result[connection.first, default: []].insert(connection.second)
+            result[connection.second, default: []].insert(connection.first)
         }
-        
+    }
+    
+    private func part1(_ connectedComputersByComputer: [String: Set<String>]) -> Int {
         var setsOfInterconnectedComputers = Set<Set<String>>()
         
         for (computer, connectedComputers) in connectedComputersByComputer {
             for combination in connectedComputers.combinations(ofCount: 2) {
-                let firstIsConnectedToOthers = connectedComputersByComputer[combination[0], default: []]
-                    .isSuperset(of: [computer, combination[1]])
-                let secondIsConnectedToOthers = connectedComputersByComputer[combination[1], default: []]
-                    .isSuperset(of: [computer, combination[0]])
+                let areInterconnected = combination.allSatisfy {
+                    let others = Set([computer]).union(Set(combination).subtracting([$0]))
+                    return connectedComputersByComputer[$0, default: []].isSuperset(of: others)
+                }
                 
-                guard firstIsConnectedToOthers, secondIsConnectedToOthers else {
+                guard areInterconnected else {
                     continue
                 }
                 
-                let interconnectedComputers: Set = [computer, combination[0], combination[1]]
+                let interconnectedComputers = Set([computer] + combination)
                 setsOfInterconnectedComputers.insert(interconnectedComputers)
             }
         }
@@ -67,6 +80,39 @@ struct Day23: DayCommand {
                 computer.starts(with: "t")
             })
         })
+    }
+    
+    private func part2(_ connectedComputersByComputer: [String: Set<String>]) -> String {
+        var largestSetOfInterconnectedComputers = Set<String>()
+        
+        for (computer, connectedComputers) in connectedComputersByComputer
+            .sorted(by: { $0.value.count > $1.value.count }) {
+            if connectedComputers.count <= largestSetOfInterconnectedComputers.count {
+                break
+            }
+            
+            let countRange = max(3, largestSetOfInterconnectedComputers.count) ... max(3, connectedComputers.count)
+            
+            for count in countRange.reversed() {
+                for combination in connectedComputers.combinations(ofCount: count) {
+                    let areInterconnected = combination.allSatisfy {
+                        let others = Set([computer]).union(Set(combination).subtracting([$0]))
+                        return connectedComputersByComputer[$0, default: []].isSuperset(of: others)
+                    }
+                    
+                    guard areInterconnected else {
+                        continue
+                    }
+                    
+                    let interconnectedComputers = Set([computer] + combination)
+                    if interconnectedComputers.count > largestSetOfInterconnectedComputers.count {
+                        largestSetOfInterconnectedComputers = interconnectedComputers
+                    }
+                }
+            }
+        }
+        
+        return largestSetOfInterconnectedComputers.sorted().joined(separator: ",")
     }
 }
 
