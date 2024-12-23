@@ -87,7 +87,7 @@ struct Day23: DayCommand {
         
         for (computer, connectedComputers) in connectedComputersByComputer
             .sorted(by: { $0.value.count > $1.value.count }) {
-            if connectedComputers.count <= largestSetOfInterconnectedComputers.count {
+            if connectedComputers.count < largestSetOfInterconnectedComputers.count {
                 break
             }
             
