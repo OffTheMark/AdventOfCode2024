@@ -85,12 +85,20 @@ struct Day23: DayCommand {
     private func part2(_ connectedComputersByComputer: [String: Set<String>]) -> String {
         var largestSetOfInterconnectedComputers = Set<String>()
         
+        // We sort computers by descending number of other connected computers. This allows us to stop iterating over
+        // computers when it's impossible to find a bigger set.
         for (computer, connectedComputers) in connectedComputersByComputer
             .sorted(by: { $0.value.count > $1.value.count }) {
+            // If the number of computers connected to the current computer is less than to the number of computers in
+            // the largest set, we stop iterating: we can't find a larger set.
             if connectedComputers.count < largestSetOfInterconnectedComputers.count {
                 break
             }
             
+            // We find combinations of decreasing count in the connected computers. The range of combination count where
+            // we could find the largest set has:
+            // - a lower bound equal to the maximum between 3 (as per part 1) and the size of the current largest set
+            // - an upper bound that is equal to the maximum between 3 and the number of connected computers.
             let countRange = max(3, largestSetOfInterconnectedComputers.count) ... max(3, connectedComputers.count)
             
             for count in countRange.reversed() {
