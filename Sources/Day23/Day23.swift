@@ -61,9 +61,9 @@ struct Day23: DayCommand {
         
         for (computer, connectedComputers) in connectedComputersByComputer {
             for combination in connectedComputers.combinations(ofCount: 2) {
-                let areInterconnected = combination.allSatisfy {
-                    let others = Set([computer]).union(Set(combination).subtracting([$0]))
-                    return connectedComputersByComputer[$0, default: []].isSuperset(of: others)
+                let areInterconnected = combination.allSatisfy { current in
+                    let others = Set([computer]).union(Set(combination).subtracting([current]))
+                    return connectedComputersByComputer[current, default: []].isSuperset(of: others)
                 }
                 
                 guard areInterconnected else {
@@ -83,7 +83,7 @@ struct Day23: DayCommand {
     }
     
     private func part2(_ connectedComputersByComputer: [String: Set<String>]) -> String {
-        var largestSetOfInterconnectedComputers = Set<String>()
+        var largestSet = Set<String>()
         
         // We sort computers by descending number of other connected computers. This allows us to stop iterating over
         // computers when it's impossible to find a bigger set.
@@ -91,7 +91,7 @@ struct Day23: DayCommand {
             .sorted(by: { $0.value.count > $1.value.count }) {
             // If the number of computers connected to the current computer is less than to the number of computers in
             // the largest set, we stop iterating: we can't find a larger set.
-            if connectedComputers.count < largestSetOfInterconnectedComputers.count {
+            if connectedComputers.count < largestSet.count {
                 break
             }
             
@@ -99,13 +99,13 @@ struct Day23: DayCommand {
             // we could find the largest set has:
             // - a lower bound equal to the maximum between 3 (as per part 1) and the size of the current largest set
             // - an upper bound that is equal to the maximum between 3 and the number of connected computers.
-            let countRange = max(3, largestSetOfInterconnectedComputers.count) ... max(3, connectedComputers.count)
+            let countRange = max(3, largestSet.count) ... max(3, connectedComputers.count)
             
             for count in countRange.reversed() {
                 for combination in connectedComputers.combinations(ofCount: count) {
-                    let areInterconnected = combination.allSatisfy {
-                        let others = Set([computer]).union(Set(combination).subtracting([$0]))
-                        return connectedComputersByComputer[$0, default: []].isSuperset(of: others)
+                    let areInterconnected = combination.allSatisfy { current in
+                        let others = Set([computer]).union(Set(combination).subtracting([current]))
+                        return connectedComputersByComputer[current, default: []].isSuperset(of: others)
                     }
                     
                     guard areInterconnected else {
@@ -113,14 +113,14 @@ struct Day23: DayCommand {
                     }
                     
                     let interconnectedComputers = Set([computer] + combination)
-                    if interconnectedComputers.count > largestSetOfInterconnectedComputers.count {
-                        largestSetOfInterconnectedComputers = interconnectedComputers
+                    if interconnectedComputers.count > largestSet.count {
+                        largestSet = interconnectedComputers
                     }
                 }
             }
         }
         
-        return largestSetOfInterconnectedComputers.sorted().joined(separator: ",")
+        return largestSet.sorted().joined(separator: ",")
     }
 }
 
