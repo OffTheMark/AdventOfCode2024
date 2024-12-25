@@ -31,6 +31,13 @@ struct Day24: DayCommand {
         }
         print("Decimal number output on wires starting with z:", number)
         print("Elapsed time:", part1Duration, terminator: "\n\n")
+        
+        printTitle("Part 2", level: .title1)
+        let (part2Duration, swappedWires) = clock.measure {
+            part2(initialValues: initialValues, wires: wires)
+        }
+        print("Sorted wires to swap:", swappedWires)
+        print("Elapsed time:", part2Duration, terminator: "\n\n")
     }
     
     private func parse() throws -> (initialValues: [InitialValue], wires: [Wire]) {
@@ -81,13 +88,66 @@ struct Day24: DayCommand {
         }
         
         let valuesOfZWires = zWires.sorted().map({ valuesByWire[$0]! })
-        return valuesOfZWires.enumerated().reduce(into: 0) { number, element in
-            let (index, value) = element
-            
-            if value {
-                number += Int(pow(2, Double(index)))
+        return Int(bits: valuesOfZWires)
+    }
+    
+    private func part2(initialValues: [InitialValue], wires: [Wire]) -> String {
+        let choiceOfYOrYOrZ = ChoiceOf {
+            "x"
+            "y"
+            "z"
+        }
+        let zWires: Set<String> = Set(
+            initialValues.compactMap({ initialValue in
+                if initialValue.wire.starts(with: "z") {
+                    initialValue.wire
+                }
+                else {
+                    nil
+                }
+            })
+        )
+        .union(wires.reduce(into: Set<String>()) { result, wire in
+            if wire.lhs.starts(with: "z") {
+                result.insert(wire.lhs)
+            }
+            if wire.rhs.starts(with: "z") {
+                result.insert(wire.rhs)
+            }
+            if wire.output.starts(with: "z") {
+                result.insert(wire.output)
+            }
+        })
+        let greatestZWire = zWires.max()!
+        var wrongWires = Set<String>()
+        
+        for wire in wires {
+            if wire.output.starts(with: "z"),
+               wire.gate != .xor,
+               wire.output != greatestZWire {
+                wrongWires.insert(wire.output)
+            }
+            if wire.gate == .xor,
+               !wire.lhs.starts(with: choiceOfYOrYOrZ),
+               !wire.rhs.starts(with: choiceOfYOrYOrZ),
+               !wire.output.starts(with: choiceOfYOrYOrZ) {
+                wrongWires.insert(wire.output)
+            }
+            if wire.gate == .and, !wire.inputs.contains("x00"),
+               wires.contains(where: { other in
+                   other.inputs.contains(wire.output) && other.gate != .or
+               }) {
+                wrongWires.insert(wire.output)
+            }
+            if wire.gate == .xor,
+               wires.contains(where: { other in
+                   other.inputs.contains(wire.output) && other.gate == .or
+               }) {
+                wrongWires.insert(wire.output)
             }
         }
+        
+        return wrongWires.sorted().joined(separator: ",")
     }
 }
 
@@ -133,7 +193,9 @@ private struct Wire {
     let lhs: String
     let gate: Gate
     let rhs: String
-    let output: String
+    var output: String
+    
+    var inputs: [String] { [lhs, rhs] }
 }
 
 extension Wire {
@@ -193,5 +255,30 @@ private enum Gate: String {
         case .xor:
             lhs != rhs
         }
+    }
+}
+
+private extension Int {
+    init(bits: [Bool]) {
+        self = bits.enumerated().reduce(into: 0) { result, element in
+            let (index, value) = element
+            
+            if value {
+                result += Int(pow(2, Double(index)))
+            }
+        }
+    }
+    
+    var bits: [Bool] {
+        var current = abs(self)
+        var bits = [current % 2 == 1]
+        
+        while current >= 2 {
+            current /= 2
+            let bit = current % 2 == 1
+            bits.append(bit)
+        }
+        
+        return bits
     }
 }
