@@ -19,8 +19,11 @@ struct Day14: DayCommand {
         )
     }
     
-    @Argument(help: "Puzzle input path")
-    var puzzleInputPath: String
+    @Argument(
+        help: "Puzzle input path",
+        transform: { URL(filePath: $0, relativeTo: nil) }
+    )
+    var puzzleInputURL: URL
     
     func run() throws {
         let robots = try readLines().compactMap(Robot.init)
